@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! cfor {
     ($var:stmt; $test:expr; $increment:expr, $body:block) => {
         {
@@ -12,6 +13,8 @@ macro_rules! cfor {
 
 #[cfg(test)]
 mod tests {
+    use core::arch::asm;
+
     #[test]
     fn it_works() {
         let mut control = 0;
@@ -31,5 +34,31 @@ mod tests {
         });
 
         assert!(control == range_for && control == for_each);
+    }
+
+    #[test]
+    fn explore() {
+        let mut i: u64 = 0;
+        let mut result = 0;
+
+        // SAFETY: It's just a for loop
+        unsafe {
+            asm!(
+                "MOV {tmp}, {i}",
+                "MOV {accu:e}, 0",
+                "2:",
+                "INC {tmp}",
+                "ADD {accu:e}, 2",
+                "CMP {tmp}, 10",
+                "JL 2b",
+                "MOV {i}, {tmp}",
+                i = inout(reg) i,
+                tmp = out(reg) _,
+                accu = out(reg) result,
+            );
+        }
+
+        assert_eq!(i, 10);
+        assert_eq!(result, 20);
     }
 }
